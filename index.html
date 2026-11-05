@@ -287,6 +287,8 @@ a.li:hover{background:var(--surface-2)}
 .seg button{border:0;background:var(--surface);padding:6px 12px;font-size:12.5px;font-weight:500;cursor:pointer;color:var(--muted)}
 .seg button.on{background:var(--btn);color:var(--btn-fg)}
 .hint{font-size:12px;color:var(--muted)}
+.pp{display:flex;gap:6px;min-width:0;flex-wrap:wrap}
+.pp select{flex:1 1 140px;min-width:0}
 .stlist{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 .stnote{border-left:2px solid var(--border-strong);padding:2px 0 2px 12px;font-size:13px}
 .stnote.cur{border-left-color:var(--fg)}
@@ -294,7 +296,7 @@ a.li:hover{background:var(--surface-2)}
 .stmeta .link{margin-left:auto;font-size:11.5px}
 @media (max-width:760px){
   .addbar{grid-template-columns:1fr 1fr}
-  .addbar>input:first-child,.addbar>select{grid-column:1/-1}
+  .addbar>input:first-child,.addbar>select,.addbar>.pp{grid-column:1/-1}
   .addbar>.btn{grid-column:1/-1;justify-content:center}
   .item{grid-template-columns:28px minmax(0,1fr) auto;padding:11px 14px}
   .item .time{grid-column:2;grid-row:2;font-size:12px}
@@ -323,7 +325,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v8</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v9</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -474,6 +476,22 @@ function clone(o){return o?JSON.parse(JSON.stringify(o)):o}
 function doneOn(a){return a.feito?a.dataFeito:null}
 function sortByTime(a,b){const ta=a.feito?a.ini:a.hIni,tb=b.feito?b.ini:b.hIni;return (ta||"99").localeCompare(tb||"99")}
 function minsOnDay(day){return S.ativs.reduce((t,a)=>t+(a.feito&&a.dataFeito===day?durMin(a):0),0)}
+/* Seletor em cascata: primeiro só os projetos principais; os subprojetos aparecem depois de escolher o principal. */
+function byNome(a,b){return (a.nome||"").localeCompare(b.nome||"")}
+function pickTop(sel){const L=S.projetos.filter(p=>isOpen(p)&&(!parentOf(p)||!isOpen(parentOf(p))));const sp=projById(sel);if(sp&&!isOpen(sp)&&!L.includes(sp))L.push(sp);return L.sort(byNome)}
+function pickKids(id){return childrenOf(id).filter(isOpen).sort(byNome)}
+function pickChain(id){const c=[];let p=projById(id);while(p){c.unshift(p.id);const pai=parentOf(p);p=pai&&isOpen(pai)&&isOpen(p)?pai:null}return c}
+function pickerHTML(base,sel){
+  const chain=sel&&sel!==INTERNO?pickChain(sel):[];
+  const opt=(v,t,on)=>'<option value="'+esc(v)+'"'+(on?" selected":"")+'>'+esc(t)+'</option>';
+  let h='<select id="'+base+'-0" data-pp="'+base+'" data-lv="0" aria-label="Projeto">'+opt(INTERNO,"Interno / sem projeto",!chain.length)+pickTop(sel).map(p=>opt(p.id,p.nome+(pickKids(p.id).length?"  ▸":""),chain[0]===p.id)).join("")+'</select>';
+  let lv=0,cur=chain[0];
+  while(cur){const kids=pickKids(cur);if(!kids.length)break;lv++;
+    h+='<select id="'+base+'-'+lv+'" data-pp="'+base+'" data-lv="'+lv+'" aria-label="Subprojeto">'+opt("","Geral (sem subprojeto)",!chain[lv])+kids.map(k=>opt(k.id,"↳ "+k.nome+(pickKids(k.id).length?"  ▸":""),chain[lv]===k.id)).join("")+'</select>';
+    cur=chain[lv];}
+  return '<span class="pp" id="'+base+'">'+h+'</span>';
+}
+function pickerValue(base){let v=INTERNO;document.querySelectorAll("#"+base+" select").forEach(x=>{if(x.value)v=x.value});return v}
 function projOptions(sel,withInterno){
   const ps=S.projetos.filter(p=>isOpen(p)||p.id===sel).map(p=>({p,n:fullName(p)})).sort((a,b)=>a.n.localeCompare(b.n));
   return (withInterno!==false?'<option value="'+INTERNO+'"'+(sel===INTERNO||!sel?" selected":"")+'>Interno / sem projeto</option>':"")+ps.map(x=>'<option value="'+esc(x.p.id)+'"'+(x.p.id===sel?" selected":"")+'>'+esc(x.n)+'</option>').join("");
@@ -616,7 +634,7 @@ function itemRow(a,opts){
   const time=done?(a.ini+"–"+a.fim):running?("Desde "+hmOf(a.iniciadoEm)):(a.hIni?("Prev. "+a.hIni+(a.hFim?"–"+a.hFim:"")):"Sem horário");
   const p=a.projetoId&&a.projetoId!==INTERNO?projById(a.projetoId):null;
   let sub="";
-  if(!opts.hideProj)sub+=p?'<a href="#projeto-'+esc(p.id)+'">'+esc(p.nome)+'</a>':'<span>'+esc(projName(a.projetoId))+'</span>';
+  if(!opts.hideProj)sub+=p?'<a href="#projeto-'+esc(p.id)+'">'+esc(fullName(p))+'</a>':'<span>'+esc(projName(a.projetoId))+'</span>';
   if(opts.showDate)sub+='<span class="date">'+(sub?"· ":"")+fmtD(done?a.dataFeito:a.data)+'</span>';
   if(!done&&a.data&&a.data<todayISO()&&!opts.showDate)sub+='<span class="due late">Era para '+fmtDM(a.data)+'</span>';
   if(a.etapa)sub+='<span class="st">Etapa</span>';
@@ -627,7 +645,7 @@ function itemRow(a,opts){
 function addBar(day,projId){
   return '<form class="addbar" data-act="add-atv"'+(projId?' data-proj="'+esc(projId)+'"':"")+'>'+
     '<input type="text" name="titulo" id="add-titulo" placeholder="'+(projId?"Nova atividade deste projeto":"O que você vai fazer (ou fez)?")+'" required aria-label="Atividade">'+
-    (projId?'<input type="date" name="data" id="add-data" value="'+esc(day)+'" aria-label="Data">':'<select name="proj" id="add-proj" aria-label="Projeto">'+projOptions(S.lastProj||INTERNO)+'</select>')+
+    (projId?'<input type="date" name="data" id="add-data" value="'+esc(day)+'" aria-label="Data">':pickerHTML("add-proj",S.lastProj||INTERNO))+
     '<input type="time" name="ini" id="add-ini" aria-label="Início previsto (opcional)" title="Início previsto (opcional)">'+
     '<input type="time" name="fim" id="add-fim" aria-label="Fim previsto (opcional)" title="Fim previsto (opcional)">'+
     '<button class="btn" type="submit">'+ICON.plus+'Adicionar</button>'+
@@ -862,7 +880,7 @@ function modalHTML(){
   }else if(m.type==="atv"){
     const a=m.data;title="Editar atividade";
     body='<div class="fgrid"><label class="f full">Atividade<input type="text" id="m-at" value="'+esc(a.titulo||"")+'"></label>'+
-      '<label class="f full">Projeto<select id="m-ap">'+projOptions(a.projetoId||INTERNO)+'</select></label>'+
+      '<div class="f full">Projeto'+pickerHTML("m-ap",a.projetoId||INTERNO)+'</div>'+
       (a.feito?'<label class="f full">Dia em que fez<input type="date" id="m-ad" value="'+esc(a.dataFeito||"")+'"></label><label class="f">Início<input type="time" id="m-ai" value="'+esc(a.ini||"")+'"></label><label class="f">Fim<input type="time" id="m-af" value="'+esc(a.fim||"")+'"></label>'
       :'<label class="f full">Data planejada<input type="date" id="m-ad" value="'+esc(a.data||"")+'"></label><label class="f">Início previsto<input type="time" id="m-ai" value="'+esc(a.hIni||"")+'"></label><label class="f">Fim previsto<input type="time" id="m-af" value="'+esc(a.hFim||"")+'"></label>')+
       '</div>'+(a.feito?'<p class="hint" style="margin:0">Horários registrados automaticamente. Ajuste só se precisar corrigir.</p>':"")+(a.etapa?'<p class="hint" style="margin:0">Ligada a uma etapa do status do projeto. Excluir esta atividade desmarca a etapa.</p>':"")+'<div id="m-err" class="confirm" hidden></div>';
@@ -926,7 +944,13 @@ document.addEventListener("change",ev=>{
   const t=ev.target;
   if(t.id==="f-scope"){S.filter.scope=t.value;render()}
   else if(t.id==="f-status"){S.filter.status=t.value;render()}
-  else if(t.id==="add-proj"){S.lastProj=t.value}
+  else if(t.dataset.pp){
+    const base=t.dataset.pp,lv=Number(t.dataset.lv);let v=t.value;
+    if(!v){const prev=document.getElementById(base+"-"+(lv-1));v=prev?prev.value:INTERNO}
+    const box=document.getElementById(base);if(box)box.outerHTML=pickerHTML(base,v||INTERNO);
+    if(base==="add-proj")S.lastProj=v||INTERNO;
+    const nx=document.getElementById(base+"-"+(lv+1));if(nx&&t.value)nx.focus();
+  }
   else if(t.dataset.act==="step-date"){const p=clone(projById(t.dataset.id));if(!p)return;p.etapas[t.dataset.k]=Object.assign({},p.etapas[t.dataset.k],{feito:true,data:t.value});saveDoc("projetos",p)}
   else if(t.dataset.act==="notes"){const p=clone(projById(t.dataset.id));if(!p||(p.notas||"")===t.value)return;p.notas=t.value;saveDoc("projetos",p).then(()=>toast("Anotações salvas"))}
 });
@@ -936,7 +960,7 @@ document.addEventListener("submit",ev=>{
     p.statusNotas=(p.statusNotas||[]).concat([{id:uid(),em:new Date().toISOString(),texto:t}]);f.reset();saveDoc("projetos",p);toast("Status registrado");return}
   if(f.dataset.act!=="add-atv")return;ev.preventDefault();
   const titulo=f.elements.titulo.value.trim();if(!titulo)return;
-  const projetoId=f.dataset.proj||f.elements.proj.value||INTERNO;
+  const projetoId=f.dataset.proj||pickerValue("add-proj");
   const data=f.dataset.proj?(f.elements.data.value||""):(S.day||todayISO());
   const ini=f.elements.ini.value,fim=f.elements.fim.value,ja=f.elements.feito.checked;
   const a={id:uid(),titulo,projetoId,data,hIni:ini,hFim:fim,feito:false,criadoEm:new Date().toISOString()};
@@ -990,7 +1014,7 @@ document.addEventListener("click",ev=>{
     case "m-pdel-yes":{const id=modal.data.id;closeModal();location.hash="projetos";childrenOf(id).forEach(c=>{const cc=clone(c);cc.paiId="";saveDoc("projetos",cc)});delDoc("projetos",id).then(()=>toast("Projeto excluído"));break}
     case "m-adel-yes":{const a=modal.data;closeModal();if(a.etapa){const p=clone(projById(a.projetoId));if(p){p.etapas[a.etapa]={feito:false,data:""};saveDoc("projetos",p)}}delDoc("atividades",a.id).then(()=>toast("Atividade excluída"));break}
     case "m-save-atv":{
-      const a=modal.data;a.titulo=val("m-at");a.projetoId=val("m-ap")||INTERNO;
+      const a=modal.data;a.titulo=val("m-at");a.projetoId=pickerValue("m-ap");
       if(!a.titulo){mErr("Descreva a atividade.");return}
       if(a.feito){a.dataFeito=val("m-ad");a.ini=val("m-ai");a.fim=val("m-af");const er=validTimes(a.ini,a.fim);if(er){mErr(er);return}if(!a.dataFeito){mErr("Informe o dia em que fez.");return}}
       else{a.data=val("m-ad");a.hIni=val("m-ai");a.hFim=val("m-af")}
