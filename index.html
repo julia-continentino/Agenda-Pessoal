@@ -323,7 +323,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v7</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v8</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -381,17 +381,20 @@ const SCOPES=[
   {k:"Outro",label:"Outro",cls:"Outro"}
 ];
 const STEPS=[
-  {k:"proposta",label:"Proposta aceita"},
-  {k:"gtb",label:"Abertura de GTB"},
-  {k:"independencia",label:"Independência"},
+  {k:"gtb",label:"Abertura de GTB",principal:true},
+  {k:"independencia",label:"Independência",principal:true},
+  {k:"proposta",label:"Proposta aceita",principal:true},
+  {k:"documentos",label:"Recebimento de documentos iniciais"},
   {k:"calculos",label:"Cálculos"},
   {k:"minuta",label:"Primeira minuta enviada"},
   {k:"diagramacao",label:"Diagramação"},
   {k:"carta",label:"Carta de representação"},
   {k:"relatorio",label:"Relatório assinado"},
-  {k:"sumario",label:"Sumário assinado"},
-  {k:"fechamento",label:"Fechamento LEAP"}
+  {k:"sumario",label:"Sumário assinado",soPPA:true},
+  {k:"fechamento",label:"Fechamento LEAP",principal:true}
 ];
+// Etapas que valem para cada projeto: subprojetos não têm GTB, independência, proposta nem fechamento; sumário só em PPA.
+function stepsFor(p){const sub=!!(p&&p.paiId);const ppa=!!(p&&p.escopos&&p.escopos.includes("PPA"));return STEPS.filter(s=>!(sub&&s.principal)&&!(s.soPPA&&!ppa))}
 const STATUS=[
   {k:"nao_iniciado",label:"Não iniciado",cls:""},
   {k:"andamento",label:"Em andamento",cls:"and"},
@@ -443,9 +446,9 @@ function scopeOf(k){return SCOPES.find(s=>s.k===k)||SCOPES[5]}
 function scopeChip(k){const s=scopeOf(k);return '<span class="chip sc-'+s.cls+'"><i></i>'+esc(s.label)+'</span>'}
 function statusOf(k){return STATUS.find(s=>s.k===k)||STATUS[0]}
 function statusChip(k){const s=statusOf(k);return '<span class="st '+s.cls+'">'+esc(s.label)+'</span>'}
-function stepsDone(p){const e=p.etapas||{};return STEPS.filter(s=>e[s.k]&&e[s.k].feito).length}
-function nextStep(p){const e=p.etapas||{};return STEPS.find(s=>!(e[s.k]&&e[s.k].feito))||null}
-function leapBar(p){const n=stepsDone(p);let h='<div class="leap-wrap"><div class="leap" aria-label="'+n+' de '+STEPS.length+' etapas do status do projeto">';for(let i=0;i<STEPS.length;i++)h+='<span class="'+(i<n?"on":"")+'"></span>';return h+'</div><span class="num">'+n+'/'+STEPS.length+'</span></div>'}
+function stepsDone(p){const e=p.etapas||{};return stepsFor(p).filter(s=>e[s.k]&&e[s.k].feito).length}
+function nextStep(p){const e=p.etapas||{};return stepsFor(p).find(s=>!(e[s.k]&&e[s.k].feito))||null}
+function leapBar(p){const n=stepsDone(p);const T=stepsFor(p).length;let h='<div class="leap-wrap"><div class="leap" style="grid-template-columns:repeat('+T+',1fr)" aria-label="'+n+' de '+T+' etapas do status do projeto">';for(let i=0;i<T;i++)h+='<span class="'+(i<n?"on":"")+'"></span>';return h+'</div><span class="num">'+n+'/'+T+'</span></div>'}
 function isOpen(p){return p.status!=="concluido"}
 function dueChip(p){
   if(!p.dataEntrega)return '<span class="due fine">Sem data</span>';
@@ -827,7 +830,7 @@ function viewProjeto(id){
   h+='<section class="card"><div class="card-h"><h2>Escopo do projeto</h2><button class="link" data-act="edit-proj" data-id="'+esc(p.id)+'">Editar</button></div><div class="card-b">'+(p.escopoDescricao?'<div class="prose">'+esc(p.escopoDescricao)+'</div>':'<p class="muted" style="margin:0">Descreva o que está sendo entregue: data-base, entidade avaliada, metodologia, entregáveis.</p>')+'</div></section>';
   h+='<section class="card"><div class="card-h"><h2>Anotações</h2></div><div class="card-b"><textarea id="notes-'+esc(p.id)+'" data-act="notes" data-id="'+esc(p.id)+'" placeholder="Pendências, contatos do cliente, pontos de atenção…">'+esc(p.notas||"")+'</textarea><div class="hint" style="margin-top:6px">Salva automaticamente quando você sai do campo.</div></div></section>';
   h+='</div><div class="stack">';
-  h+='<section class="card"><div class="card-h"><h2>Status do projeto</h2><span class="num muted">'+stepsDone(p)+'/'+STEPS.length+'</span></div><div class="card-b"><ol class="steps">'+STEPS.map((s,i)=>{const st=e[s.k]||{};const done=!!st.feito;return '<li class="step'+(done?" done":"")+(ns&&ns.k===s.k?" next":"")+'"><button class="tick" data-act="step" data-id="'+esc(p.id)+'" data-k="'+s.k+'" aria-pressed="'+done+'" aria-label="'+(done?"Desmarcar ":"Marcar ")+esc(s.label)+'">'+(done?ICON.check:(i+1))+'</button><div class="nm">'+esc(s.label)+'</div>'+(done?'<input type="date" id="step-'+s.k+'" value="'+esc(st.data||"")+'" data-act="step-date" data-id="'+esc(p.id)+'" data-k="'+s.k+'" aria-label="Data em que '+esc(s.label)+' foi feita (opcional)" title="Data (opcional)">':'<span></span>')+'</li>'}).join("")+'</ol><p class="hint" style="margin:8px 0 0">Marcar uma etapa só indica que ela está feita. A data é opcional e nada entra no timesheet.</p></div>'+
+  h+='<section class="card"><div class="card-h"><h2>Status do projeto</h2><span class="num muted">'+stepsDone(p)+'/'+stepsFor(p).length+'</span></div><div class="card-b"><ol class="steps">'+stepsFor(p).map((s,i)=>{const st=e[s.k]||{};const done=!!st.feito;return '<li class="step'+(done?" done":"")+(ns&&ns.k===s.k?" next":"")+'"><button class="tick" data-act="step" data-id="'+esc(p.id)+'" data-k="'+s.k+'" aria-pressed="'+done+'" aria-label="'+(done?"Desmarcar ":"Marcar ")+esc(s.label)+'">'+(done?ICON.check:(i+1))+'</button><div class="nm">'+esc(s.label)+'</div>'+(done?'<input type="date" id="step-'+s.k+'" value="'+esc(st.data||"")+'" data-act="step-date" data-id="'+esc(p.id)+'" data-k="'+s.k+'" aria-label="Data em que '+esc(s.label)+' foi feita (opcional)" title="Data (opcional)">':'<span></span>')+'</li>'}).join("")+'</ol><p class="hint" style="margin:8px 0 0">Marcar uma etapa só indica que ela está feita. A data é opcional e nada entra no timesheet.</p></div>'+
     '<div class="sec-t" style="border-top:1px solid var(--border)">Atualizações de status</div><div class="card-b"><form class="stform" data-act="add-status" data-id="'+esc(p.id)+'"><textarea id="st-'+esc(p.id)+'" name="texto" rows="3" placeholder="Como está o projeto? Ex.: aguardando base do cliente; cálculos 70%; minuta prevista para sexta."></textarea><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn sm" type="submit">Registrar status</button></div></form>'+
     (notas.length?'<div class="stlist">'+notas.map((n,i)=>'<div class="stnote'+(i===0?" cur":"")+'"><div class="stmeta"><span class="date">'+fmtD(n.em.slice(0,10))+' '+esc(hmOf(n.em))+'</span>'+(i===0?'<span class="st and">Atual</span>':"")+'<button class="link" data-act="del-status" data-id="'+esc(p.id)+'" data-n="'+esc(n.id)+'">Apagar</button></div><div class="prose">'+esc(n.texto)+'</div></div>').join("")+'</div>':'<p class="hint" style="margin:10px 0 0">Nenhuma atualização ainda.</p>')+
     '</div></section>';
