@@ -318,7 +318,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v4</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -527,21 +527,27 @@ function authMsg(e){const c=e&&e.code||"";
   if(c.includes("too-many-requests"))return "Muitas tentativas. Aguarde alguns minutos.";
   return "Não foi possível entrar ("+c+").";}
 document.getElementById("login-form").addEventListener("submit",ev=>{ev.preventDefault();lgMsg("Entrando…",true);
-  signInWithEmailAndPassword(auth,val("lg-email"),document.getElementById("lg-pass").value).catch(e=>lgMsg(authMsg(e)))});
+  const slow=setTimeout(()=>lgMsg("Está demorando. Verifique a internet ou recarregue a página."),15000);
+  signInWithEmailAndPassword(auth,val("lg-email"),document.getElementById("lg-pass").value).then(c=>{clearTimeout(slow);showApp(c.user)},e=>{clearTimeout(slow);lgMsg(authMsg(e))})});
 document.getElementById("lg-new").addEventListener("click",()=>{const em=val("lg-email"),pw=document.getElementById("lg-pass").value;
   if(!em||pw.length<6){lgMsg("Preencha o e-mail e uma senha com pelo menos 6 caracteres.");return}
-  lgMsg("Criando acesso…",true);createUserWithEmailAndPassword(auth,em,pw).catch(e=>lgMsg(authMsg(e)))});
+  lgMsg("Criando acesso…",true);createUserWithEmailAndPassword(auth,em,pw).then(c=>showApp(c.user),e=>lgMsg(authMsg(e)))});
 document.getElementById("lg-reset").addEventListener("click",()=>{const em=val("lg-email");if(!em){lgMsg("Digite seu e-mail acima.");return}
   sendPasswordResetEmail(auth,em).then(()=>lgMsg("Enviamos um link de redefinição para "+em+".",true),e=>lgMsg(authMsg(e)))});
 document.getElementById("logout").addEventListener("click",()=>{unsubs.forEach(u=>u());unsubs=[];signOut(auth)});
+function showLogin(){S.uid=null;S.mode="auth";document.getElementById("login").hidden=false;document.getElementById("app").hidden=true}
+function showApp(u){
+  if(!u||S.uid===u.uid)return;
+  try{
+    S.uid=u.uid;S.email=u.email;
+    document.getElementById("login").hidden=true;document.getElementById("app").hidden=false;
+    document.getElementById("who").textContent=u.email||"";
+    subscribe();render();
+  }catch(e){console.error(e);document.getElementById("login").hidden=false;lgMsg("Entrou, mas a agenda não abriu: "+(e&&e.message||e))}
+}
 function connect(){
   if(!CONFIGURADO){document.getElementById("login").hidden=false;lgMsg("Falta ligar o banco de dados (Firebase). Assim que a configuração for colada no código, o login funciona.");document.getElementById("lg-go").disabled=true;return}
-  onAuthStateChanged(auth,u=>{
-    const L=document.getElementById("login"),A=document.getElementById("app");
-    if(!u){S.uid=null;S.mode="auth";L.hidden=false;A.hidden=true;lgMsg("");return}
-    S.uid=u.uid;S.email=u.email;L.hidden=true;A.hidden=false;document.getElementById("who").textContent=u.email||"";
-    subscribe();render();
-  });
+  onAuthStateChanged(auth,u=>{if(u)showApp(u);else showLogin()});
 }
 function loading(){return S.mode==="connecting"||(S.mode==="db"&&!S.loadedP)}
 
