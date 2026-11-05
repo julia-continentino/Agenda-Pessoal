@@ -323,7 +323,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v5</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v6</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -516,7 +516,10 @@ function subscribe(){
     render();
   },onErr));
   unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"atividades"),snap=>{
-    S.ativs=snap.docs.map(d=>Object.assign(d.data(),{id:d.id}));S.loadedA=true;render();
+    S.ativs=snap.docs.map(d=>Object.assign(d.data(),{id:d.id}));S.loadedA=true;
+    const legado=S.ativs.filter(a=>a.etapa);
+    if(legado.length&&!snap.metadata.fromCache){legado.forEach(a=>deleteDoc(ref("atividades",a.id)).catch(()=>{}));S.ativs=S.ativs.filter(a=>!a.etapa)}
+    render();
   },onErr));
 }
 const SEED=[
@@ -823,7 +826,7 @@ function viewProjeto(id){
   h+='<section class="card"><div class="card-h"><h2>Escopo do projeto</h2><button class="link" data-act="edit-proj" data-id="'+esc(p.id)+'">Editar</button></div><div class="card-b">'+(p.escopoDescricao?'<div class="prose">'+esc(p.escopoDescricao)+'</div>':'<p class="muted" style="margin:0">Descreva o que está sendo entregue: data-base, entidade avaliada, metodologia, entregáveis.</p>')+'</div></section>';
   h+='<section class="card"><div class="card-h"><h2>Anotações</h2></div><div class="card-b"><textarea id="notes-'+esc(p.id)+'" data-act="notes" data-id="'+esc(p.id)+'" placeholder="Pendências, contatos do cliente, pontos de atenção…">'+esc(p.notas||"")+'</textarea><div class="hint" style="margin-top:6px">Salva automaticamente quando você sai do campo.</div></div></section>';
   h+='</div><div class="stack">';
-  h+='<section class="card"><div class="card-h"><h2>Status do projeto</h2><span class="num muted">'+stepsDone(p)+'/'+STEPS.length+'</span></div><div class="card-b"><ol class="steps">'+STEPS.map((s,i)=>{const st=e[s.k]||{};const done=!!st.feito;return '<li class="step'+(done?" done":"")+(ns&&ns.k===s.k?" next":"")+'"><button class="tick" data-act="step" data-id="'+esc(p.id)+'" data-k="'+s.k+'" aria-pressed="'+done+'" aria-label="'+(done?"Desmarcar ":"Marcar ")+esc(s.label)+'">'+(done?ICON.check:(i+1))+'</button><div class="nm">'+esc(s.label)+'</div>'+(done?'<span class="date muted">'+fmtD(st.data)+'</span>':'<span></span>')+'</li>'}).join("")+'</ol><p class="hint" style="margin:8px 0 0">Marcar uma etapa registra só a data. Não entra no timesheet.</p></div>'+
+  h+='<section class="card"><div class="card-h"><h2>Status do projeto</h2><span class="num muted">'+stepsDone(p)+'/'+STEPS.length+'</span></div><div class="card-b"><ol class="steps">'+STEPS.map((s,i)=>{const st=e[s.k]||{};const done=!!st.feito;return '<li class="step'+(done?" done":"")+(ns&&ns.k===s.k?" next":"")+'"><button class="tick" data-act="step" data-id="'+esc(p.id)+'" data-k="'+s.k+'" aria-pressed="'+done+'" aria-label="'+(done?"Desmarcar ":"Marcar ")+esc(s.label)+'">'+(done?ICON.check:(i+1))+'</button><div class="nm">'+esc(s.label)+'</div>'+(done?'<input type="date" id="step-'+s.k+'" value="'+esc(st.data||"")+'" data-act="step-date" data-id="'+esc(p.id)+'" data-k="'+s.k+'" aria-label="Data em que '+esc(s.label)+' foi feita (opcional)" title="Data (opcional)">':'<span></span>')+'</li>'}).join("")+'</ol><p class="hint" style="margin:8px 0 0">Marcar uma etapa só indica que ela está feita. A data é opcional e nada entra no timesheet.</p></div>'+
     '<div class="sec-t" style="border-top:1px solid var(--border)">Atualizações de status</div><div class="card-b"><form class="stform" data-act="add-status" data-id="'+esc(p.id)+'"><textarea id="st-'+esc(p.id)+'" name="texto" rows="3" placeholder="Como está o projeto? Ex.: aguardando base do cliente; cálculos 70%; minuta prevista para sexta."></textarea><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn sm" type="submit">Registrar status</button></div></form>'+
     (notas.length?'<div class="stlist">'+notas.map((n,i)=>'<div class="stnote'+(i===0?" cur":"")+'"><div class="stmeta"><span class="date">'+fmtD(n.em.slice(0,10))+' '+esc(hmOf(n.em))+'</span>'+(i===0?'<span class="st and">Atual</span>':"")+'<button class="link" data-act="del-status" data-id="'+esc(p.id)+'" data-n="'+esc(n.id)+'">Apagar</button></div><div class="prose">'+esc(n.texto)+'</div></div>').join("")+'</div>':'<p class="hint" style="margin:10px 0 0">Nenhuma atualização ainda.</p>')+
     '</div></section>';
@@ -920,6 +923,7 @@ document.addEventListener("change",ev=>{
   if(t.id==="f-scope"){S.filter.scope=t.value;render()}
   else if(t.id==="f-status"){S.filter.status=t.value;render()}
   else if(t.id==="add-proj"){S.lastProj=t.value}
+  else if(t.dataset.act==="step-date"){const p=clone(projById(t.dataset.id));if(!p)return;p.etapas[t.dataset.k]=Object.assign({},p.etapas[t.dataset.k],{feito:true,data:t.value});saveDoc("projetos",p)}
   else if(t.dataset.act==="notes"){const p=clone(projById(t.dataset.id));if(!p||(p.notas||"")===t.value)return;p.notas=t.value;saveDoc("projetos",p).then(()=>toast("Anotações salvas"))}
 });
 document.addEventListener("submit",ev=>{
@@ -969,9 +973,9 @@ document.addEventListener("click",ev=>{
       const p=projById(b.dataset.id);if(!p)return;const k=b.dataset.k;const cur=p.etapas[k]||{};
       const c=clone(p);
       if(cur.feito){c.etapas[k]={feito:false,data:""};if(k==="fechamento"&&c.status==="concluido"){c.status="andamento";delete c.concluidoEm}saveDoc("projetos",c);toast("Etapa desmarcada");return}
-      c.etapas[k]={feito:true,data:todayISO()};
+      c.etapas[k]={feito:true,data:""};
       if(k==="fechamento"){c.status="concluido";c.concluidoEm=todayISO();saveDoc("projetos",c);toast("Projeto concluído e movido para Finalizados");return}
-      saveDoc("projetos",c);toast("Etapa marcada em "+fmtD(todayISO()));break}
+      saveDoc("projetos",c);toast("Etapa marcada como feita");break}
     case "new-sub":{const pai=projById(b.dataset.id);if(!pai)return;openModal({type:"proj",data:normProj(uid(),{status:"andamento",paiId:pai.id,cliente:pai.cliente||"",escopos:pai.escopos.slice(),dataComecei:todayISO()})});break}
     case "del-status":{const p=clone(projById(b.dataset.id));if(!p)return;
       if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Confirmar";b.style.color="var(--bad)";setTimeout(()=>{if(b.isConnected){b.dataset.confirm="";b.textContent="Apagar";b.style.color=""}},4000);return}
