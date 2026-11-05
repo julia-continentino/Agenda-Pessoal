@@ -323,7 +323,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v6</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v7</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -416,7 +416,7 @@ const ICON={
   next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
 };
 
-const S={projetos:[],ativs:[],loadedP:false,loadedA:false,db:null,dl:null,mode:"connecting",err:null,
+const S={apagando:new Set(),projetos:[],ativs:[],loadedP:false,loadedA:false,db:null,dl:null,mode:"connecting",err:null,
   filter:{q:"",scope:"",status:"ativos"},day:null,ts:{mode:"semana",ref:null}};
 let modal=null;
 
@@ -517,8 +517,9 @@ function subscribe(){
   },onErr));
   unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"atividades"),snap=>{
     S.ativs=snap.docs.map(d=>Object.assign(d.data(),{id:d.id}));S.loadedA=true;
-    const legado=S.ativs.filter(a=>a.etapa);
-    if(legado.length&&!snap.metadata.fromCache){legado.forEach(a=>deleteDoc(ref("atividades",a.id)).catch(()=>{}));S.ativs=S.ativs.filter(a=>!a.etapa)}
+    const isEtapa=a=>!!a.etapa||/^Etapa (LEAP)?:?/i.test(a.titulo||"")&&/^Etapa( LEAP)?: /i.test(a.titulo||"");
+    const legado=S.ativs.filter(isEtapa);
+    if(legado.length){legado.forEach(a=>{if(!S.apagando.has(a.id)){S.apagando.add(a.id);deleteDoc(ref("atividades",a.id)).catch(()=>{})}});S.ativs=S.ativs.filter(a=>!isEtapa(a))}
     render();
   },onErr));
 }
