@@ -287,6 +287,15 @@ a.li:hover{background:var(--surface-2)}
 .seg button{border:0;background:var(--surface);padding:6px 12px;font-size:12.5px;font-weight:500;cursor:pointer;color:var(--muted)}
 .seg button.on{background:var(--btn);color:var(--btn-fg)}
 .hint{font-size:12px;color:var(--muted)}
+.prazo{margin-bottom:16px}
+.dur-in{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.dur-in input{width:76px;padding:5px 8px;font-family:var(--mono);text-align:right}
+.pz-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.pz-big{font-size:18px;font-weight:600}
+.pz-track{height:10px;background:var(--surface-2);border-radius:5px;overflow:hidden;border:1px solid var(--border)}
+.pz-fill{height:100%;background:var(--fg);border-radius:5px}
+.pz-fill.soon{background:var(--warn)}.pz-fill.late{background:var(--bad)}
+.pz-leg{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums}
 .pp{display:flex;gap:6px;min-width:0;flex-wrap:wrap}
 .pp select{flex:1 1 140px;min-width:0}
 .stlist{display:flex;flex-direction:column;gap:10px;margin-top:14px}
@@ -325,7 +334,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v9</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v10</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -506,7 +515,21 @@ function writeErr(e){
 }
 function listFor(coll){return coll==="projetos"?S.projetos:S.ativs}
 function ref(coll,id){return doc(fdb,ROOT,S.uid,coll,id)}
+/* Fim esperado = início (recebimento dos documentos iniciais) + duração em dias corridos. */
+function applyFim(p){
+  const d=Number(p.duracaoDias)||0;
+  if(p.dataInicioReal&&d>0){p.dataEntrega=addDays(p.dataInicioReal,d);p.fimAuto=true}
+  else if(p.fimAuto){p.dataEntrega="";p.fimAuto=false}
+  return p;
+}
+function prazoInfo(p){
+  const d=Number(p.duracaoDias)||0;if(!d)return null;
+  if(!p.dataInicioReal)return {d,semInicio:true};
+  const passados=Math.max(0,-daysFromToday(p.dataInicioReal));
+  return {d,passados,restam:d-passados,pct:Math.min(100,Math.round(passados/d*100))};
+}
 function saveDoc(coll,o){
+  if(coll==="projetos")applyFim(o);
   o.atualizadoEm=new Date().toISOString();
   const L=listFor(coll);const i=L.findIndex(x=>x.id===o.id);if(i>=0)L[i]=o;else L.push(o);
   render();
@@ -523,7 +546,7 @@ function delDoc(coll,id){
 function normProj(id,d){
   const p=Object.assign({escopos:[],etapas:{},emailEnviado:{},emailRecebido:{},status:"andamento"},d||{});
   p.id=id;if(!Array.isArray(p.escopos))p.escopos=[];if(!p.etapas||typeof p.etapas!=="object")p.etapas={};
-  if(!Array.isArray(p.statusNotas))p.statusNotas=[];if(!p.paiId)p.paiId="";
+  if(!Array.isArray(p.statusNotas))p.statusNotas=[];if(!p.paiId)p.paiId="";applyFim(p);
   return p;
 }
 function subscribe(){
@@ -830,10 +853,19 @@ function viewProjeto(id){
   h+=notices();
   h+='<div class="detail-head"><div style="min-width:0">'+(pai?'<div class="eyebrow">Subprojeto de '+esc(fullName(pai))+'</div>':"")+'<h1>'+esc(p.nome)+'</h1><p class="lede">'+esc(p.cliente||"Cliente não informado")+'</p><div class="chips">'+p.escopos.map(scopeChip).join("")+statusChip(p.status)+dueChip(p)+'</div>'+(lastStatus(p)?'<p class="lede" style="margin-top:10px"><b>Status:</b> '+esc(lastStatus(p).texto)+'</p>':"")+'</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" data-act="new-sub" data-id="'+esc(p.id)+'">'+ICON.plus+'Subprojeto</button><button class="btn ghost" data-act="edit-proj" data-id="'+esc(p.id)+'">'+ICON.edit+'Editar dados</button></div></div>';
-  h+='<section class="card dates"><div><div class="k">Projeto iniciou</div><div class="v">'+fmtD(p.dataInicioReal)+'</div><div class="s">Início real do projeto</div></div>'+
+  h+='<section class="card dates"><div><div class="k">Projeto iniciou</div><div class="v">'+fmtD(p.dataInicioReal)+'</div><div class="s">'+(p.dataInicioReal?"Documentos iniciais recebidos":"Ao marcar documentos iniciais")+'</div></div>'+
     '<div><div class="k">Comecei a fazer</div><div class="v">'+fmtD(p.dataComecei)+'</div><div class="s">'+(p.dataComecei?esc(agoLabel(p.dataComecei)):"Não informado")+'</div></div>'+
-    '<div><div class="k">Fim esperado</div><div class="v">'+fmtD(p.dataEntrega)+'</div><div class="s">'+(dEnt==null?"Sem data":dEnt<0?"Venceu "+agoLabel(p.dataEntrega):dEnt===0?"Hoje":"Faltam "+dEnt+" dias")+'</div></div>'+
+    '<div><div class="k">Fim esperado</div><div class="v">'+fmtD(p.dataEntrega)+'</div><div class="s">'+(dEnt==null?"Sem data":dEnt<0?"Venceu "+agoLabel(p.dataEntrega):dEnt===0?"Hoje":"Faltam "+dEnt+" dias corridos")+'</div></div>'+
     '<div><div class="k">Horas lançadas</div><div class="v">'+fmtH(horas)+'</div><div class="s">'+(kids.length?"Inclui subprojetos":feitas.length+" atividade"+(feitas.length===1?"":"s")+" feita"+(feitas.length===1?"":"s"))+'</div></div></section>';
+  {const pi=prazoInfo(p);
+   h+='<section class="card prazo"><div class="card-h"><h2>Prazo do projeto</h2><label class="dur-in">Duração<input type="number" min="1" step="1" inputmode="numeric" id="dur-'+esc(p.id)+'" data-act="dur" data-id="'+esc(p.id)+'" value="'+esc(p.duracaoDias||"")+'" placeholder="—"> dias corridos</label></div><div class="card-b">';
+   if(!pi)h+='<p class="muted" style="margin:0">Informe quantos dias corridos o projeto deve durar. O fim esperado é calculado a partir do recebimento dos documentos iniciais.</p>';
+   else if(pi.semInicio)h+='<p class="muted" style="margin:0">Duração de <b class="num">'+pi.d+'</b> dias corridos. A contagem começa quando você marcar <b>Recebimento de documentos iniciais</b> no Status do projeto.</p>';
+   else{const late=pi.restam<0,warn=!late&&pi.restam<=Math.max(2,Math.round(pi.d*0.15));
+     h+='<div class="pz-top"><span class="pz-big"><span class="num">'+pi.passados+' de '+pi.d+'</span> dias corridos</span><span class="due '+(late?"late":warn?"soon":"fine")+'">'+(late?"Passou "+(-pi.restam)+" dia"+(pi.restam===-1?"":"s")+" do prazo":pi.restam===0?"Último dia":"Faltam "+pi.restam+" dias corridos")+'</span></div>'+
+       '<div class="pz-track" role="img" aria-label="'+pi.pct+'% do prazo usado"><div class="pz-fill '+(late?"late":warn?"soon":"")+'" style="width:'+pi.pct+'%"></div></div>'+
+       '<div class="pz-leg"><span>Início '+fmtD(p.dataInicioReal)+'</span><span>'+pi.pct+'% do prazo usado · '+stepsDone(p)+'/'+stepsFor(p).length+' etapas</span><span>Fim '+fmtD(p.dataEntrega)+'</span></div>'}
+   h+='</div></section>';}
 
   h+='<div class="grid2"><div class="stack">';
   h+='<section class="card"><div class="card-h"><h2>Atividades</h2><span class="hint">'+pend.length+' a fazer</span></div>';
@@ -870,9 +902,10 @@ function modalHTML(){
       '<label class="f">Cliente<input type="text" id="m-cliente" value="'+esc(p.cliente||"")+'"></label>'+
       '<label class="f">Situação<select id="m-status">'+STATUS.map(s=>'<option value="'+s.k+'"'+(p.status===s.k?" selected":"")+'>'+esc(s.label)+'</option>').join("")+'</select></label>'+
       '<div class="f full">Escopo<div class="checks" id="m-escopos">'+SCOPES.map(s=>'<label><input type="checkbox" value="'+esc(s.k)+'"'+(p.escopos.includes(s.k)?" checked":"")+'>'+esc(s.label)+'</label>').join("")+'</div></div>'+
-      '<label class="f">Projeto iniciou em<input type="date" id="m-ini" value="'+esc(p.dataInicioReal||"")+'"></label>'+
+      '<label class="f">Projeto iniciou em (documentos iniciais)<input type="date" id="m-ini" value="'+esc(p.dataInicioReal||"")+'"></label>'+
+      '<label class="f">Duração prevista (dias corridos)<input type="number" min="1" step="1" inputmode="numeric" id="m-dur" value="'+esc(p.duracaoDias||"")+'"></label>'+
       '<label class="f">Comecei a fazer em<input type="date" id="m-com" value="'+esc(p.dataComecei||"")+'"></label>'+
-      '<label class="f">Fim esperado do projeto<input type="date" id="m-ent" value="'+esc(p.dataEntrega||"")+'"></label>'+
+      '<label class="f">Fim esperado do projeto'+(p.fimAuto?' <span class="hint">(calculado: início + duração)</span>':"")+'<input type="date" id="m-ent" value="'+esc(p.dataEntrega||"")+'"'+(p.fimAuto?" disabled":"")+'></label>'+
       '<label class="f">Faz parte de<select id="m-pai"><option value="">— Projeto principal —</option>'+S.projetos.filter(x=>x.id!==p.id&&!descIds(p.id).has(x.id)).map(x=>({x,n:fullName(x)})).sort((a,b)=>a.n.localeCompare(b.n)).map(o=>'<option value="'+esc(o.x.id)+'"'+(p.paiId===o.x.id?" selected":"")+'>'+esc(o.n)+'</option>').join("")+'</select></label>'+
       '<label class="f full">Descrição do escopo<textarea id="m-esc" rows="4" placeholder="Data-base, entidade, metodologia, entregáveis…">'+esc(p.escopoDescricao||"")+'</textarea></label>'+
       '</div><div id="m-err" class="confirm" hidden></div>';
@@ -951,7 +984,8 @@ document.addEventListener("change",ev=>{
     if(base==="add-proj")S.lastProj=v||INTERNO;
     const nx=document.getElementById(base+"-"+(lv+1));if(nx&&t.value)nx.focus();
   }
-  else if(t.dataset.act==="step-date"){const p=clone(projById(t.dataset.id));if(!p)return;p.etapas[t.dataset.k]=Object.assign({},p.etapas[t.dataset.k],{feito:true,data:t.value});saveDoc("projetos",p)}
+  else if(t.dataset.act==="step-date"){const p=clone(projById(t.dataset.id));if(!p)return;p.etapas[t.dataset.k]=Object.assign({},p.etapas[t.dataset.k],{feito:true,data:t.value});if(t.dataset.k==="documentos")p.dataInicioReal=t.value;saveDoc("projetos",p)}
+  else if(t.dataset.act==="dur"){const p=clone(projById(t.dataset.id));if(!p)return;const n=Math.max(0,Math.round(Number(t.value)||0));if((Number(p.duracaoDias)||0)===n)return;p.duracaoDias=n||"";saveDoc("projetos",p);toast(n?"Duração: "+n+" dias corridos":"Duração removida")}
   else if(t.dataset.act==="notes"){const p=clone(projById(t.dataset.id));if(!p||(p.notas||"")===t.value)return;p.notas=t.value;saveDoc("projetos",p).then(()=>toast("Anotações salvas"))}
 });
 document.addEventListener("submit",ev=>{
@@ -1000,8 +1034,9 @@ document.addEventListener("click",ev=>{
     case "step":{
       const p=projById(b.dataset.id);if(!p)return;const k=b.dataset.k;const cur=p.etapas[k]||{};
       const c=clone(p);
-      if(cur.feito){c.etapas[k]={feito:false,data:""};if(k==="fechamento"&&c.status==="concluido"){c.status="andamento";delete c.concluidoEm}saveDoc("projetos",c);toast("Etapa desmarcada");return}
+      if(cur.feito){c.etapas[k]={feito:false,data:""};if(k==="documentos"&&c.dataInicioReal===cur.data)c.dataInicioReal="";if(k==="fechamento"&&c.status==="concluido"){c.status="andamento";delete c.concluidoEm}saveDoc("projetos",c);toast("Etapa desmarcada");return}
       c.etapas[k]={feito:true,data:""};
+      if(k==="documentos"){c.etapas[k].data=todayISO();c.dataInicioReal=todayISO();saveDoc("projetos",c);toast("Início do projeto: "+fmtD(todayISO())+(c.duracaoDias?" · fim esperado "+fmtD(c.dataEntrega):""));return}
       if(k==="fechamento"){c.status="concluido";c.concluidoEm=todayISO();saveDoc("projetos",c);toast("Projeto concluído e movido para Finalizados");return}
       saveDoc("projetos",c);toast("Etapa marcada como feita");break}
     case "new-sub":{const pai=projById(b.dataset.id);if(!pai)return;openModal({type:"proj",data:normProj(uid(),{status:"andamento",paiId:pai.id,cliente:pai.cliente||"",escopos:pai.escopos.slice(),dataComecei:todayISO()})});break}
@@ -1036,7 +1071,8 @@ function syncProjFields(){
   if(!modal||modal.type!=="proj")return;const p=modal.data;
   p.nome=val("m-nome");p.cliente=val("m-cliente");p.status=val("m-status")||p.status;
   p.escopos=[...document.querySelectorAll("#m-escopos input:checked")].map(i=>i.value);
-  p.dataInicioReal=val("m-ini");p.dataComecei=val("m-com");p.dataEntrega=val("m-ent");p.paiId=val("m-pai");
+  p.dataInicioReal=val("m-ini");p.dataComecei=val("m-com");p.duracaoDias=Math.max(0,Math.round(Number(val("m-dur"))||0))||"";if(!(p.dataInicioReal&&p.duracaoDias)){p.fimAuto=false;p.dataEntrega=val("m-ent")}
+  if(p.dataInicioReal&&p.etapas.documentos&&p.etapas.documentos.feito)p.etapas.documentos.data=p.dataInicioReal;p.paiId=val("m-pai");
   const t=document.getElementById("m-esc");if(t)p.escopoDescricao=t.value;
 }
 
