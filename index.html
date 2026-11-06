@@ -16,7 +16,7 @@
   --btn:#0f172a; --btn-fg:#ffffff;
   --ok:#047857; --ok-bg:#ecfdf5; --warn:#b45309; --warn-bg:#fffbeb; --bad:#b91c1c; --bad-bg:#fef2f2;
   --ppa:#1d4ed8; --ppa-bg:#eff6ff; --imp:#be123c; --imp-bg:#fff1f2; --cota:#6d28d9; --cota-bg:#f5f3ff;
-  --val:#047857; --val-bg:#ecfdf5; --bp:#b45309; --bp-bg:#fffbeb; --oth:#475569; --oth-bg:#f1f5f9;
+  --val:#047857; --val-bg:#ecfdf5; --bp:#b45309; --bp-bg:#fffbeb; --rev:#0e7490; --rev-bg:#ecfeff; --oth:#475569; --oth-bg:#f1f5f9;
   --ring:#64748b; --shadow:0 10px 30px rgba(15,23,42,.18);
   --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
   --mono:"Geist Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
@@ -28,7 +28,7 @@
   --btn:#e2e8f0; --btn-fg:#0f172a;
   --ok:#34d399; --ok-bg:#0b2a22; --warn:#fbbf24; --warn-bg:#2b2110; --bad:#f87171; --bad-bg:#2d1416;
   --ppa:#93c5fd; --ppa-bg:#14223f; --imp:#fda4af; --imp-bg:#33141d; --cota:#c4b5fd; --cota-bg:#221a3d;
-  --val:#6ee7b7; --val-bg:#0b2a22; --bp:#fcd34d; --bp-bg:#2b2110; --oth:#cbd5e1; --oth-bg:#1e293b;
+  --val:#6ee7b7; --val-bg:#0b2a22; --bp:#fcd34d; --bp-bg:#2b2110; --rev:#67e8f9; --rev-bg:#0b2a30; --oth:#cbd5e1; --oth-bg:#1e293b;
   --ring:#94a3b8; --shadow:0 10px 30px rgba(0,0,0,.5); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0b1120; --surface:#111827; --surface-2:#1a2335; --border:#243044; --border-strong:#334155;
@@ -37,7 +37,7 @@
   --btn:#e2e8f0; --btn-fg:#0f172a;
   --ok:#34d399; --ok-bg:#0b2a22; --warn:#fbbf24; --warn-bg:#2b2110; --bad:#f87171; --bad-bg:#2d1416;
   --ppa:#93c5fd; --ppa-bg:#14223f; --imp:#fda4af; --imp-bg:#33141d; --cota:#c4b5fd; --cota-bg:#221a3d;
-  --val:#6ee7b7; --val-bg:#0b2a22; --bp:#fcd34d; --bp-bg:#2b2110; --oth:#cbd5e1; --oth-bg:#1e293b;
+  --val:#6ee7b7; --val-bg:#0b2a22; --bp:#fcd34d; --bp-bg:#2b2110; --rev:#67e8f9; --rev-bg:#0b2a30; --oth:#cbd5e1; --oth-bg:#1e293b;
   --ring:#94a3b8; --shadow:0 10px 30px rgba(0,0,0,.5); color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -112,6 +112,7 @@ h2{font-size:15px;font-weight:600;margin:0}
 .sc-Cota{background:var(--cota-bg);color:var(--cota)}
 .sc-Valuation{background:var(--val-bg);color:var(--val)}
 .sc-BP{background:var(--bp-bg);color:var(--bp)}
+.sc-Rev{background:var(--rev-bg);color:var(--rev)}
 .sc-Outro{background:var(--oth-bg);color:var(--oth)}
 .st{display:inline-flex;align-items:center;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;white-space:nowrap;background:var(--surface-2);color:var(--muted)}
 .st.and{background:var(--ppa-bg);color:var(--ppa)}
@@ -334,7 +335,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v10</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v11</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -389,6 +390,7 @@ const SCOPES=[
   {k:"Marcação de Cota",label:"Marcação de Cota",cls:"Cota"},
   {k:"Valuation",label:"Valuation",cls:"Valuation"},
   {k:"Business Plan",label:"Business Plan",cls:"BP"},
+  {k:"Revisão",label:"Revisão",cls:"Rev"},
   {k:"Outro",label:"Outro",cls:"Outro"}
 ];
 const STEPS=[
@@ -404,8 +406,16 @@ const STEPS=[
   {k:"sumario",label:"Sumário assinado",soPPA:true},
   {k:"fechamento",label:"Fechamento LEAP",principal:true}
 ];
+// Projetos de Revisão têm um status próprio; "Recebimento de documentos" marca o início e "Envio à auditoria" conclui.
+const STEPS_REV=[
+  {k:"documentos",label:"Recebimento de documentos"},
+  {k:"wp",label:"Realização do WP"},
+  {k:"memo",label:"Realização do memo"},
+  {k:"envio",label:"Envio à auditoria",conclui:true}
+];
+function isRevisao(p){return !!(p&&p.escopos&&p.escopos.includes("Revisão"))}
 // Etapas que valem para cada projeto: subprojetos não têm GTB, independência, proposta nem fechamento; sumário só em PPA.
-function stepsFor(p){const sub=!!(p&&p.paiId);const ppa=!!(p&&p.escopos&&p.escopos.includes("PPA"));return STEPS.filter(s=>!(sub&&s.principal)&&!(s.soPPA&&!ppa))}
+function stepsFor(p){if(isRevisao(p))return STEPS_REV;const sub=!!(p&&p.paiId);const ppa=!!(p&&p.escopos&&p.escopos.includes("PPA"));return STEPS.filter(s=>!(sub&&s.principal)&&!(s.soPPA&&!ppa))}
 const STATUS=[
   {k:"nao_iniciado",label:"Não iniciado",cls:""},
   {k:"andamento",label:"Em andamento",cls:"and"},
@@ -803,14 +813,14 @@ function viewProjetos(){
   h+='</section>';
   return h;
 }
-function doneDate(p){return (p.etapas&&p.etapas.fechamento&&p.etapas.fechamento.data)||p.concluidoEm||(p.atualizadoEm||"").slice(0,10)}
+function doneDate(p){return (p.etapas&&p.etapas.fechamento&&p.etapas.fechamento.data)||(isRevisao(p)&&p.etapas&&p.etapas.envio&&p.etapas.envio.data)||p.concluidoEm||(p.atualizadoEm||"").slice(0,10)}
 function viewFinalizados(){
   const list=S.projetos.filter(p=>!isOpen(p)).sort((a,b)=>doneDate(b).localeCompare(doneDate(a)));
   let h='<div class="page-head"><div><div class="eyebrow">Arquivo</div><h1>Finalizados</h1><p class="lede">Projetos concluídos. Para reabrir, entre no projeto e mude a situação.</p></div></div>';
   h+=notices();
   h+='<section class="card">';
   if(loading())h+='<div class="empty">Carregando…</div>';
-  else if(!list.length)h+='<div class="empty"><b>Nenhum projeto finalizado</b>Quando você marcar “Fechamento LEAP” ou mudar a situação para Concluído, o projeto aparece aqui.</div>';
+  else if(!list.length)h+='<div class="empty"><b>Nenhum projeto finalizado</b>Quando você marcar “Fechamento LEAP” (ou “Envio à auditoria” numa revisão) ou mudar a situação para Concluído, o projeto aparece aqui.</div>';
   else h+='<div class="tbl-wrap"><table><thead><tr><th>Projeto</th><th>Escopo</th><th>Concluído em</th><th style="text-align:right">Horas</th></tr></thead><tbody>'+list.map(p=>'<tr class="rowlink" data-go="projeto-'+esc(p.id)+'"><td><div class="pname">'+esc(fullName(p))+'</div><div class="psub">'+esc(p.cliente||"—")+'</div></td><td><div style="display:flex;gap:4px;flex-wrap:wrap">'+(p.escopos.length?p.escopos.map(scopeChip).join(""):'<span class="muted">—</span>')+'</div></td><td class="date">'+fmtD(doneDate(p))+'</td><td class="num" style="text-align:right">'+fmtH(projMinutes(p.id))+'</td></tr>').join("")+'</tbody></table></div>';
   return h+'</section>';
 }
@@ -1034,10 +1044,10 @@ document.addEventListener("click",ev=>{
     case "step":{
       const p=projById(b.dataset.id);if(!p)return;const k=b.dataset.k;const cur=p.etapas[k]||{};
       const c=clone(p);
-      if(cur.feito){c.etapas[k]={feito:false,data:""};if(k==="documentos"&&c.dataInicioReal===cur.data)c.dataInicioReal="";if(k==="fechamento"&&c.status==="concluido"){c.status="andamento";delete c.concluidoEm}saveDoc("projetos",c);toast("Etapa desmarcada");return}
+      if(cur.feito){c.etapas[k]={feito:false,data:""};if(k==="documentos"&&c.dataInicioReal===cur.data)c.dataInicioReal="";if((k==="fechamento"||(k==="envio"&&isRevisao(c)))&&c.status==="concluido"){c.status="andamento";delete c.concluidoEm}saveDoc("projetos",c);toast("Etapa desmarcada");return}
       c.etapas[k]={feito:true,data:""};
       if(k==="documentos"){c.etapas[k].data=todayISO();c.dataInicioReal=todayISO();saveDoc("projetos",c);toast("Início do projeto: "+fmtD(todayISO())+(c.duracaoDias?" · fim esperado "+fmtD(c.dataEntrega):""));return}
-      if(k==="fechamento"){c.status="concluido";c.concluidoEm=todayISO();saveDoc("projetos",c);toast("Projeto concluído e movido para Finalizados");return}
+      if(k==="fechamento"||(k==="envio"&&isRevisao(c))){c.status="concluido";c.concluidoEm=todayISO();saveDoc("projetos",c);toast("Projeto concluído e movido para Finalizados");return}
       saveDoc("projetos",c);toast("Etapa marcada como feita");break}
     case "new-sub":{const pai=projById(b.dataset.id);if(!pai)return;openModal({type:"proj",data:normProj(uid(),{status:"andamento",paiId:pai.id,cliente:pai.cliente||"",escopos:pai.escopos.slice(),dataComecei:todayISO()})});break}
     case "del-status":{const p=clone(projById(b.dataset.id));if(!p)return;
