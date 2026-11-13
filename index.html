@@ -355,7 +355,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v12</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v13</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -583,11 +583,14 @@ function normProj(id,d){
 function subscribe(){
   unsubs.forEach(u=>u());unsubs=[];
   S.mode="db";S.loadedP=S.loadedA=false;S.projetos=[];S.ativs=[];S.solic=[];
-  const timer=setTimeout(()=>{if(!S.loadedP){S.err="Ainda não consegui carregar seus dados. Eles aparecem assim que a conexão responder.";render()}},10000);
+  const timer=setTimeout(()=>{if(!S.servidorOk){S.err="Ainda não consegui falar com o servidor. Seus dados NÃO foram apagados: eles aparecem assim que a conexão responder. Se estiver na rede do trabalho, ela pode estar bloqueando o Firebase.";render()}},10000);
   const onErr=e=>{clearTimeout(timer);S.loadedP=S.loadedA=true;S.err=(e&&e.code==="permission-denied")?"Sem permissão para ler os dados. Confira as regras do Firestore.":"A conexão com seus dados foi interrompida. Recarregue a página.";render()};
-  unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"projetos"),{includeMetadataChanges:false},snap=>{
+  S.servidorOk=false;
+  unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"projetos"),{includeMetadataChanges:true},snap=>{
     S.projetos=snap.docs.map(d=>normProj(d.id,d.data()));
-    S.loadedP=true;clearTimeout(timer);if(S.err&&S.err.startsWith("Ainda"))S.err=null;
+    // Uma cópia vazia guardada no aparelho não prova que não há projetos: só considera carregado com resposta do servidor.
+    if(!snap.metadata.fromCache){S.servidorOk=true;clearTimeout(timer);if(S.err&&S.err.startsWith("Ainda"))S.err=null}
+    S.loadedP=S.servidorOk||snap.docs.length>0;
     render();
   },onErr));
   unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"atividades"),snap=>{
@@ -676,7 +679,7 @@ function shellNav(r){
   const sy=$("#sync");
   const off=!navigator.onLine;
   if(S.mode==="db"){sy.className="sync "+(S.err?"err":off?"":"ok");sy.querySelector("span").textContent=S.err?"Erro ao sincronizar":off?"Sem internet: salvo no aparelho":"Salvo na nuvem"}
-  $("#today").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+  $("#today").textContent=(S.email?S.email+" · ":"")+new Date().toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
 }
 function notices(){
   let h="";
@@ -824,7 +827,7 @@ function viewProjetos(){
   h+='<section class="card"><div class="filters"><input type="search" id="f-q" placeholder="Buscar por projeto, cliente ou escopo" value="'+esc(f.q)+'" aria-label="Buscar">'+
     '<select id="f-scope" aria-label="Escopo"><option value="">Todos os escopos</option>'+SCOPES.map(s=>'<option value="'+esc(s.k)+'"'+(f.scope===s.k?" selected":"")+'>'+esc(s.label)+'</option>').join("")+'</select></div>';
   if(loading())h+='<div class="empty">Carregando seus projetos…</div>';
-  else if(!S.projetos.length)h+='<div class="empty"><b>Nenhum projeto ainda</b>Clique em “Novo projeto” ou <button class="link" data-act="seed">adicione os 4 projetos que já conversamos</button> (PPA Banco Uruguaio, N Sports, Cimed, NetSupport).</div>';
+  else if(!S.projetos.length)h+='<div class="empty"><b>Nenhum projeto nesta conta ('+esc(S.email||"")+')</b>Clique em “Novo projeto” ou <button class="link" data-act="seed">adicione os 4 projetos que já conversamos</button> (PPA Banco Uruguaio, N Sports, Cimed, NetSupport).</div>';
   else if(!open.length)h+='<div class="empty"><b>Nenhum projeto em andamento</b>Os concluídos estão em <a class="link" href="#finalizados">Finalizados</a>.</div>';
   else if(q||f.scope){
     const list=open.filter(p=>(!f.scope||p.escopos.includes(f.scope))&&(!q||(fullName(p)+" "+(p.cliente||"")+" "+(p.escopoDescricao||"")).toLowerCase().includes(q))).sort(byEnd);
