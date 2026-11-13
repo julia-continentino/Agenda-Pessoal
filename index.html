@@ -355,7 +355,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v13</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v14</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -541,7 +541,8 @@ function projOptions(sel,withInterno){
 let unsubs=[];
 function writeErr(e){
   const code=e&&e.code||"";
-  S.err=code==="permission-denied"?"Sem permissão para salvar. Confira as regras do Firestore.":"Não foi possível salvar a última alteração. Ela será enviada quando a conexão voltar.";
+  console.error("Firestore gravação",e);
+  S.err=(code==="permission-denied"?"Sem permissão para salvar. As regras do Firestore precisam ser as do arquivo firestore.rules.":code==="resource-exhausted"?"O limite gratuito diário do Firebase foi atingido.":"Não foi possível salvar a última alteração. Ela será enviada quando a conexão voltar.")+" [código: "+(code||"desconhecido")+"]";
   render();
 }
 function listFor(coll){return coll==="projetos"?S.projetos:coll==="solicitacoes"?S.solic:S.ativs}
@@ -584,7 +585,13 @@ function subscribe(){
   unsubs.forEach(u=>u());unsubs=[];
   S.mode="db";S.loadedP=S.loadedA=false;S.projetos=[];S.ativs=[];S.solic=[];
   const timer=setTimeout(()=>{if(!S.servidorOk){S.err="Ainda não consegui falar com o servidor. Seus dados NÃO foram apagados: eles aparecem assim que a conexão responder. Se estiver na rede do trabalho, ela pode estar bloqueando o Firebase.";render()}},10000);
-  const onErr=e=>{clearTimeout(timer);S.loadedP=S.loadedA=true;S.err=(e&&e.code==="permission-denied")?"Sem permissão para ler os dados. Confira as regras do Firestore.":"A conexão com seus dados foi interrompida. Recarregue a página.";render()};
+  const onErrFor=nome=>e=>{const c=(e&&e.code)||"desconhecido";console.error("Firestore",nome,e);
+    if(nome==="projetos"){clearTimeout(timer);S.loadedP=true}if(nome==="atividades")S.loadedA=true;
+    S.err=(c==="permission-denied"?"Sem permissão para ler "+nome+". As regras do Firestore precisam ser as do arquivo firestore.rules (usuarios/{uid}/...).":
+      c==="resource-exhausted"?"O limite gratuito diário do Firebase foi atingido. Os dados voltam a sincronizar amanhã.":
+      c==="unauthenticated"?"Sua sessão expirou. Toque em Sair e entre de novo.":
+      "Erro ao ler "+nome+" do servidor. Recarregue a página.")+" [código: "+c+"]";render()};
+  const onErr=onErrFor("projetos");
   S.servidorOk=false;
   unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"projetos"),{includeMetadataChanges:true},snap=>{
     S.projetos=snap.docs.map(d=>normProj(d.id,d.data()));
@@ -592,17 +599,17 @@ function subscribe(){
     if(!snap.metadata.fromCache){S.servidorOk=true;clearTimeout(timer);if(S.err&&S.err.startsWith("Ainda"))S.err=null}
     S.loadedP=S.servidorOk||snap.docs.length>0;
     render();
-  },onErr));
+  },onErrFor("projetos")));
   unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"atividades"),snap=>{
     S.ativs=snap.docs.map(d=>Object.assign(d.data(),{id:d.id}));S.loadedA=true;
     const isEtapa=a=>!!a.etapa||/^Etapa (LEAP)?:?/i.test(a.titulo||"")&&/^Etapa( LEAP)?: /i.test(a.titulo||"");
     const legado=S.ativs.filter(isEtapa);
     if(legado.length){legado.forEach(a=>{if(!S.apagando.has(a.id)){S.apagando.add(a.id);deleteDoc(ref("atividades",a.id)).catch(()=>{})}});S.ativs=S.ativs.filter(a=>!isEtapa(a))}
     render();
-  },onErr));
+  },onErrFor("atividades")));
   unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"solicitacoes"),snap=>{
     S.solic=snap.docs.map(d=>Object.assign(d.data(),{id:d.id}));render();
-  },onErr));
+  },onErrFor("solicitacoes")));
 }
 const SEED=[
   {id:"ppa-banco-uruguaio",nome:"PPA Banco Uruguaio",escopos:["PPA"]},
