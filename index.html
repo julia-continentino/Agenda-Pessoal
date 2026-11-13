@@ -288,6 +288,23 @@ a.li:hover{background:var(--surface-2)}
 .seg button{border:0;background:var(--surface);padding:6px 12px;font-size:12.5px;font-weight:500;cursor:pointer;color:var(--muted)}
 .seg button.on{background:var(--btn);color:var(--btn-fg)}
 .hint{font-size:12px;color:var(--muted)}
+.solform{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1.4fr);gap:8px;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface-2);border-radius:12px 12px 0 0;align-items:end}
+.solform>input,.solform>.pp{min-width:0}
+.solform .mini{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)}
+.solform>.btn{justify-content:center}
+.sols{display:flex;flex-direction:column}
+.sol{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);align-items:start}
+.sol:last-child{border-bottom:0}
+.sol.ok .tt{color:var(--muted)}
+.sol .tt{font-weight:500;overflow-wrap:anywhere}
+.sol .sub{font-size:12.5px;color:var(--muted);margin-top:1px}
+.sol .sub a{color:inherit}
+.sol-d{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px}
+.sol-a{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.docform{display:grid;grid-template-columns:minmax(0,2fr) 150px minmax(0,1.5fr) auto;gap:8px;padding:12px 18px;border-top:1px solid var(--border);background:var(--surface-2);border-radius:0 0 12px 12px}
+.docform input{padding:7px 9px;font-size:13px}
+table.docs td{padding:9px 14px}
+.link-t{background:none;border:0;padding:0;cursor:pointer;text-align:left;text-decoration:underline dotted;text-underline-offset:3px}
 .prazo{margin-bottom:16px}
 .dur-in{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
 .dur-in input{width:76px;padding:5px 8px;font-family:var(--mono);text-align:right}
@@ -307,6 +324,9 @@ a.li:hover{background:var(--surface-2)}
 @media (max-width:760px){
   .addbar{grid-template-columns:1fr 1fr}
   .addbar>input:first-child,.addbar>select,.addbar>.pp{grid-column:1/-1}
+  .solform{grid-template-columns:1fr 1fr}.solform>#sol-pedido,.solform>.pp,.solform>.btn{grid-column:1/-1}
+  .docform{grid-template-columns:1fr 1fr}.docform>#doc-nome,.docform>.btn{grid-column:1/-1}
+  .sol{grid-template-columns:28px minmax(0,1fr);padding:12px 14px}.sol-a{grid-column:2;align-items:flex-start;flex-direction:row;flex-wrap:wrap}
   .addbar>.btn{grid-column:1/-1;justify-content:center}
   .item{grid-template-columns:28px minmax(0,1fr) auto;padding:11px 14px}
   .item .time{grid-column:2;grid-row:2;font-size:12px}
@@ -335,7 +355,7 @@ img{max-width:100%}
 <body>
 <div id="login" class="login">
   <form class="box" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v11</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="brand-mark">JC</div><div><h1>Minhas Demandas</h1><div class="hint">Agenda e timesheet pessoal · v12</div></div></div>
     <label class="f">E-mail<input type="email" id="lg-email" autocomplete="username" required></label>
     <label class="f">Senha<input type="password" id="lg-pass" autocomplete="current-password" minlength="6" required></label>
     <div class="msg" id="lg-msg" role="status"></div>
@@ -429,6 +449,7 @@ const INTERNO="__interno";
 const ICON={
   agenda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>',
   timesheet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  solicitacoes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>',
   finalizados:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M10 13h4"/></svg>',
   projetos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
   prazos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 1-1h11l-2 4 2 4H5"/></svg>',
@@ -440,7 +461,7 @@ const ICON={
   next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
 };
 
-const S={apagando:new Set(),projetos:[],ativs:[],loadedP:false,loadedA:false,db:null,dl:null,mode:"connecting",err:null,
+const S={apagando:new Set(),projetos:[],ativs:[],solic:[],solicF:"abertas",loadedP:false,loadedA:false,db:null,dl:null,mode:"connecting",err:null,
   filter:{q:"",scope:"",status:"ativos"},day:null,ts:{mode:"semana",ref:null}};
 let modal=null;
 
@@ -523,7 +544,7 @@ function writeErr(e){
   S.err=code==="permission-denied"?"Sem permissão para salvar. Confira as regras do Firestore.":"Não foi possível salvar a última alteração. Ela será enviada quando a conexão voltar.";
   render();
 }
-function listFor(coll){return coll==="projetos"?S.projetos:S.ativs}
+function listFor(coll){return coll==="projetos"?S.projetos:coll==="solicitacoes"?S.solic:S.ativs}
 function ref(coll,id){return doc(fdb,ROOT,S.uid,coll,id)}
 /* Fim esperado = início (recebimento dos documentos iniciais) + duração em dias corridos. */
 function applyFim(p){
@@ -548,7 +569,7 @@ function saveDoc(coll,o){
   return Promise.resolve();
 }
 function delDoc(coll,id){
-  if(coll==="projetos")S.projetos=S.projetos.filter(x=>x.id!==id);else S.ativs=S.ativs.filter(x=>x.id!==id);
+  if(coll==="projetos")S.projetos=S.projetos.filter(x=>x.id!==id);else if(coll==="solicitacoes")S.solic=S.solic.filter(x=>x.id!==id);else S.ativs=S.ativs.filter(x=>x.id!==id);
   render();
   deleteDoc(ref(coll,id)).catch(writeErr);
   return Promise.resolve();
@@ -556,12 +577,12 @@ function delDoc(coll,id){
 function normProj(id,d){
   const p=Object.assign({escopos:[],etapas:{},emailEnviado:{},emailRecebido:{},status:"andamento"},d||{});
   p.id=id;if(!Array.isArray(p.escopos))p.escopos=[];if(!p.etapas||typeof p.etapas!=="object")p.etapas={};
-  if(!Array.isArray(p.statusNotas))p.statusNotas=[];if(!p.paiId)p.paiId="";applyFim(p);
+  if(!Array.isArray(p.statusNotas))p.statusNotas=[];if(!Array.isArray(p.documentos))p.documentos=[];if(!p.paiId)p.paiId="";applyFim(p);
   return p;
 }
 function subscribe(){
   unsubs.forEach(u=>u());unsubs=[];
-  S.mode="db";S.loadedP=S.loadedA=false;S.projetos=[];S.ativs=[];
+  S.mode="db";S.loadedP=S.loadedA=false;S.projetos=[];S.ativs=[];S.solic=[];
   const timer=setTimeout(()=>{if(!S.loadedP){S.err="Ainda não consegui carregar seus dados. Eles aparecem assim que a conexão responder.";render()}},10000);
   const onErr=e=>{clearTimeout(timer);S.loadedP=S.loadedA=true;S.err=(e&&e.code==="permission-denied")?"Sem permissão para ler os dados. Confira as regras do Firestore.":"A conexão com seus dados foi interrompida. Recarregue a página.";render()};
   unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"projetos"),{includeMetadataChanges:false},snap=>{
@@ -575,6 +596,9 @@ function subscribe(){
     const legado=S.ativs.filter(isEtapa);
     if(legado.length){legado.forEach(a=>{if(!S.apagando.has(a.id)){S.apagando.add(a.id);deleteDoc(ref("atividades",a.id)).catch(()=>{})}});S.ativs=S.ativs.filter(a=>!isEtapa(a))}
     render();
+  },onErr));
+  unsubs.push(onSnapshot(collection(fdb,ROOT,S.uid,"solicitacoes"),snap=>{
+    S.solic=snap.docs.map(d=>Object.assign(d.data(),{id:d.id}));render();
   },onErr));
 }
 const SEED=[
@@ -626,7 +650,7 @@ function loading(){return S.mode==="connecting"||(S.mode==="db"&&!S.loadedP)}
 function route(){
   const h=(location.hash||"").replace(/^#/,"");
   if(h.startsWith("projeto-"))return {view:"projeto",id:h.slice(8)};
-  if(["agenda","timesheet","projetos","finalizados","prazos"].includes(h))return {view:h};
+  if(["agenda","timesheet","projetos","finalizados","prazos","solicitacoes"].includes(h))return {view:h};
   return {view:"agenda"};
 }
 window.addEventListener("online",()=>render());window.addEventListener("offline",()=>render());
@@ -642,6 +666,7 @@ function shellNav(r){
     {k:"timesheet",l:"Timesheet"},
     {k:"projetos",l:"Projetos",c:S.projetos.filter(isOpen).length},
     {k:"finalizados",l:"Finalizados",c:S.projetos.filter(p=>!isOpen(p)).length},
+    {k:"solicitacoes",l:"Solicitações",c:S.solic.filter(x=>!x.dataEntregue).length,alert:S.solic.some(x=>!x.dataEntregue&&x.prazo&&x.prazo<todayISO())},
     {k:"prazos",l:"Prazos",c:late,alert:late>0}
   ];
   const cp=r.view==="projeto"?projById(r.id):null;
@@ -672,7 +697,7 @@ function itemRow(a,opts){
   if(!done&&a.data&&a.data<todayISO()&&!opts.showDate)sub+='<span class="due late">Era para '+fmtDM(a.data)+'</span>';
   if(a.etapa)sub+='<span class="st">Etapa</span>';
   return '<div class="item'+(done?" done":"")+(running?" running":"")+'"><button class="cbx" data-act="toggle" data-id="'+esc(a.id)+'" aria-pressed="'+done+'" aria-label="'+(done?"Desmarcar":"Marcar como feito")+': '+esc(a.titulo)+'">'+(done?ICON.check:"")+'</button>'+
-    '<div class="time">'+esc(time)+'</div><div class="main-c"><div class="tt">'+esc(a.titulo)+'</div>'+(sub?'<div class="sub">'+sub+'</div>':"")+'</div>'+
+    (running?'<button class="time link-t" data-act="edit-ini" data-id="'+esc(a.id)+'" title="Ajustar hora de início">'+esc(time)+' ✎</button>':'<div class="time">'+esc(time)+'</div>')+'<div class="main-c"><div class="tt">'+esc(a.titulo)+'</div>'+(sub?'<div class="sub">'+sub+'</div>':"")+'</div>'+
     '<div class="acts">'+(done?'<span class="dur">'+fmtH(durMin(a))+'</span>':'<button class="btn '+(running?"":"ghost ")+'sm" data-act="start" data-id="'+esc(a.id)+'" aria-pressed="'+!!running+'">'+(running?"Em andamento":"Começar")+'</button>')+'<button class="link" data-act="edit-atv" data-id="'+esc(a.id)+'">Editar</button></div></div>';
 }
 function addBar(day,projId){
@@ -682,7 +707,7 @@ function addBar(day,projId){
     '<input type="time" name="ini" id="add-ini" aria-label="Início previsto (opcional)" title="Início previsto (opcional)">'+
     '<input type="time" name="fim" id="add-fim" aria-label="Fim previsto (opcional)" title="Fim previsto (opcional)">'+
     '<button class="btn" type="submit">'+ICON.plus+'Adicionar</button>'+
-    '<div class="full"><label class="inl"><input type="checkbox" name="feito" id="add-feito"> Acabei de fazer (lança agora no timesheet)</label><span>Horários são opcionais e servem só de previsão.</span></div></form>';
+    '<div class="full"><label class="inl"><input type="checkbox" name="feito" id="add-feito"> Acabei de fazer (lança agora no timesheet)</label><span>Horários são opcionais. Com “Acabei de fazer”, o início digitado vale como hora em que você começou.</span></div></form>';
 }
 
 /* ---------- views ---------- */
@@ -813,6 +838,50 @@ function viewProjetos(){
   h+='</section>';
   return h;
 }
+/* ---------- solicitações a outras pessoas (não contam horas) ---------- */
+function initials(n){return (n||"?").trim().split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?"}
+function solicChip(x){
+  if(x.dataEntregue){
+    if(!x.prazo)return '<span class="due fine">Entregue</span>';
+    const atraso=Math.round((parseD(x.dataEntregue)-parseD(x.prazo))/864e5);
+    return atraso>0?'<span class="due late">Entregue com '+atraso+' dia'+(atraso>1?"s":"")+' de atraso</span>':'<span class="st done">Entregue no prazo</span>';
+  }
+  if(!x.prazo)return '<span class="due fine">Sem prazo</span>';
+  const n=daysFromToday(x.prazo);
+  if(n<0)return '<span class="due late">Atrasada '+(-n)+'d</span>';
+  if(n===0)return '<span class="due late">Vence hoje</span>';
+  if(n<=2)return '<span class="due soon">Vence em '+n+'d</span>';
+  return '<span class="due fine date">Até '+fmtDM(x.prazo)+'</span>';
+}
+function solicRow(x,hideProj){
+  const p=x.projetoId&&x.projetoId!==INTERNO?projById(x.projetoId):null;
+  return '<div class="sol'+(x.dataEntregue?" ok":"")+'"><span class="avatar">'+esc(initials(x.pessoa))+'</span><div class="sol-m"><div class="tt">'+esc(x.pedido)+'</div><div class="sub"><b>'+esc(x.pessoa||"—")+'</b>'+(!hideProj&&p?' · <a href="#projeto-'+esc(p.id)+'">'+esc(fullName(p))+'</a>':"")+'</div>'+
+    '<div class="sol-d"><span>Pedi <span class="date">'+fmtD(x.dataPedido)+'</span></span><span>Quero até <span class="date">'+(x.prazo?fmtD(x.prazo):"—")+'</span></span><span>Entregou <span class="date">'+(x.dataEntregue?fmtD(x.dataEntregue):"—")+'</span></span></div></div>'+
+    '<div class="sol-a">'+solicChip(x)+'<div style="display:flex;gap:10px;justify-content:flex-end">'+(x.dataEntregue?'<button class="link" data-act="sol-reabrir" data-id="'+esc(x.id)+'">Reabrir</button>':'<button class="btn ghost sm" data-act="sol-entregue" data-id="'+esc(x.id)+'">Entregou hoje</button>')+'<button class="link" data-act="sol-edit" data-id="'+esc(x.id)+'">Editar</button></div></div></div>';
+}
+function pessoasDatalist(){const ns=[...new Set(S.solic.map(x=>(x.pessoa||"").trim()).filter(Boolean))].sort();return '<datalist id="dl-pessoas">'+ns.map(n=>'<option value="'+esc(n)+'"></option>').join("")+'</datalist>'}
+function viewSolic(){
+  const t=todayISO();
+  const abertas=S.solic.filter(x=>!x.dataEntregue).sort((a,b)=>(a.prazo||"9999").localeCompare(b.prazo||"9999"));
+  const entregues=S.solic.filter(x=>x.dataEntregue).sort((a,b)=>b.dataEntregue.localeCompare(a.dataEntregue));
+  const atras=abertas.filter(x=>x.prazo&&x.prazo<t).length;
+  const noPrazo=entregues.filter(x=>x.prazo&&x.dataEntregue<=x.prazo).length,comPrazo=entregues.filter(x=>x.prazo).length;
+  let h='<div class="page-head"><div><div class="eyebrow">Equipe</div><h1>Solicitações</h1><p class="lede">O que você pediu para outras pessoas: quando pediu, até quando quer e quando entregaram. Não conta horas suas.</p></div></div>';
+  h+=notices();
+  h+='<div class="stats"><div class="stat"><div class="k">Em aberto</div><div class="v">'+abertas.length+'</div></div><div class="stat"><div class="k">Atrasadas</div><div class="v '+(atras?"bad":"")+'">'+atras+'</div></div><div class="stat"><div class="k">Entregues</div><div class="v ok">'+entregues.length+'</div></div><div class="stat"><div class="k">Entregues no prazo</div><div class="v">'+(comPrazo?Math.round(noPrazo/comPrazo*100)+"%":"—")+'</div></div></div>';
+  h+='<section class="card"><form class="solform" data-act="add-sol">'+pessoasDatalist()+
+    '<input type="text" name="pessoa" id="sol-pessoa" list="dl-pessoas" placeholder="Para quem" required aria-label="Para quem">'+
+    '<input type="text" name="pedido" id="sol-pedido" placeholder="O que você pediu" required aria-label="O que você pediu">'+
+    pickerHTML("sol-proj",S.lastProj||INTERNO)+
+    '<label class="mini">Pedi em<input type="date" name="dataPedido" id="sol-data" value="'+t+'"></label>'+
+    '<label class="mini">Quero até<input type="date" name="prazo" id="sol-prazo"></label>'+
+    '<button class="btn" type="submit">'+ICON.plus+'Registrar</button></form>';
+  h+='<div class="filters"><div class="seg" role="group" aria-label="Mostrar"><button class="'+(S.solicF==="abertas"?"on":"")+'" data-act="sol-f" data-f="abertas">Em aberto ('+abertas.length+')</button><button class="'+(S.solicF==="entregues"?"on":"")+'" data-act="sol-f" data-f="entregues">Entregues ('+entregues.length+')</button></div></div>';
+  const L=S.solicF==="entregues"?entregues:abertas;
+  if(!L.length)h+='<div class="empty">'+(S.solicF==="entregues"?"Nenhuma solicitação entregue ainda.":"<b>Nada pendente</b>Registre acima o que você pedir para alguém.")+'</div>';
+  else h+='<div class="sols">'+L.map(x=>solicRow(x)).join("")+'</div>';
+  return h+'</section>';
+}
 function doneDate(p){return (p.etapas&&p.etapas.fechamento&&p.etapas.fechamento.data)||(isRevisao(p)&&p.etapas&&p.etapas.envio&&p.etapas.envio.data)||p.concluidoEm||(p.atualizadoEm||"").slice(0,10)}
 function viewFinalizados(){
   const list=S.projetos.filter(p=>!isOpen(p)).sort((a,b)=>doneDate(b).localeCompare(doneDate(a)));
@@ -887,6 +956,13 @@ function viewProjeto(id){
   if(!kids.length)h+='<div class="empty">Nenhum subprojeto. Use quando este projeto tiver outros dentro dele (por exemplo, uma empresa do grupo ou uma data-base diferente).</div>';
   else h+='<div class="list">'+kids.map(c=>{const ls=lastStatus(c);return '<a class="li" href="#projeto-'+esc(c.id)+'"><div class="grow"><div class="pname ellip">'+esc(c.nome)+'</div><div class="psub ellip">'+(ls?esc(ls.texto):(c.escopos.map(k=>scopeOf(k).label).join(", ")||"Sem escopo"))+'</div></div><div class="hide-sm">'+leapBar(c)+'</div>'+(isOpen(c)?dueChip(c):statusChip(c.status))+'</a>'}).join("")+'</div>';
   h+='</section>';
+  {const D=(p.documentos||[]).slice().sort((a,b)=>(a.data||"").localeCompare(b.data||""));
+   h+='<section class="card"><div class="card-h"><h2>Documentos recebidos</h2><span class="hint">'+D.length+' documento'+(D.length===1?"":"s")+'</span></div>';
+   if(D.length)h+='<div class="tbl-wrap"><table class="docs"><thead><tr><th>Documento</th><th>Recebido em</th><th>Observação</th><th></th></tr></thead><tbody>'+D.map(d=>'<tr><td class="pname">'+esc(d.nome)+'</td><td class="date">'+fmtD(d.data)+'</td><td class="psub">'+esc(d.obs||"")+'</td><td style="text-align:right"><button class="link" data-act="doc-del" data-id="'+esc(p.id)+'" data-d="'+esc(d.id)+'">Apagar</button></td></tr>').join("")+'</tbody></table></div>';
+   else h+='<div class="empty">Nenhum documento registrado. Adicione abaixo cada documento que o cliente enviar.</div>';
+   h+='<form class="docform" data-act="add-doc" data-id="'+esc(p.id)+'"><input type="text" name="nome" id="doc-nome" placeholder="Documento (ex.: balancete set/26)" required aria-label="Documento"><input type="date" name="data" id="doc-data" value="'+todayISO()+'" aria-label="Recebido em"><input type="text" name="obs" id="doc-obs" placeholder="Observação (opcional)" aria-label="Observação"><button class="btn sm" type="submit">'+ICON.plus+'Adicionar</button></form></section>';}
+  {const SL=S.solic.filter(x=>{const ids=descIds(p.id);ids.add(p.id);return ids.has(x.projetoId)}).sort((a,b)=>(a.dataEntregue?1:0)-(b.dataEntregue?1:0)||(a.prazo||"9999").localeCompare(b.prazo||"9999"));
+   if(SL.length)h+='<section class="card"><div class="card-h"><h2>Solicitações deste projeto</h2><a class="link" href="#solicitacoes">Ver todas</a></div><div class="sols">'+SL.map(x=>solicRow(x,true)).join("")+'</div></section>';}
   h+='<section class="card"><div class="card-h"><h2>Escopo do projeto</h2><button class="link" data-act="edit-proj" data-id="'+esc(p.id)+'">Editar</button></div><div class="card-b">'+(p.escopoDescricao?'<div class="prose">'+esc(p.escopoDescricao)+'</div>':'<p class="muted" style="margin:0">Descreva o que está sendo entregue: data-base, entidade avaliada, metodologia, entregáveis.</p>')+'</div></section>';
   h+='<section class="card"><div class="card-h"><h2>Anotações</h2></div><div class="card-b"><textarea id="notes-'+esc(p.id)+'" data-act="notes" data-id="'+esc(p.id)+'" placeholder="Pendências, contatos do cliente, pontos de atenção…">'+esc(p.notas||"")+'</textarea><div class="hint" style="margin-top:6px">Salva automaticamente quando você sai do campo.</div></div></section>';
   h+='</div><div class="stack">';
@@ -925,9 +1001,18 @@ function modalHTML(){
     body='<div class="fgrid"><label class="f full">Atividade<input type="text" id="m-at" value="'+esc(a.titulo||"")+'"></label>'+
       '<div class="f full">Projeto'+pickerHTML("m-ap",a.projetoId||INTERNO)+'</div>'+
       (a.feito?'<label class="f full">Dia em que fez<input type="date" id="m-ad" value="'+esc(a.dataFeito||"")+'"></label><label class="f">Início<input type="time" id="m-ai" value="'+esc(a.ini||"")+'"></label><label class="f">Fim<input type="time" id="m-af" value="'+esc(a.fim||"")+'"></label>'
-      :'<label class="f full">Data planejada<input type="date" id="m-ad" value="'+esc(a.data||"")+'"></label><label class="f">Início previsto<input type="time" id="m-ai" value="'+esc(a.hIni||"")+'"></label><label class="f">Fim previsto<input type="time" id="m-af" value="'+esc(a.hFim||"")+'"></label>')+
+      :'<label class="f full">Data planejada<input type="date" id="m-ad" value="'+esc(a.data||"")+'"></label><label class="f">Início previsto<input type="time" id="m-ai" value="'+esc(a.hIni||"")+'"></label><label class="f">Fim previsto<input type="time" id="m-af" value="'+esc(a.hFim||"")+'"></label>'+
+        '<label class="f full">Comecei hoje às <span class="hint">(se esqueceu de clicar em Começar)</span><input type="time" id="m-real" value="'+esc(a.iniciadoEm&&isoDayOf(a.iniciadoEm)===todayISO()?hmOf(a.iniciadoEm):"")+'"></label>')+
       '</div>'+(a.feito?'<p class="hint" style="margin:0">Horários registrados automaticamente. Ajuste só se precisar corrigir.</p>':"")+(a.etapa?'<p class="hint" style="margin:0">Ligada a uma etapa do status do projeto. Excluir esta atividade desmarca a etapa.</p>':"")+'<div id="m-err" class="confirm" hidden></div>';
     foot=(m.confirmDel?'<div class="confirm">Excluir esta atividade'+(a.feito?" e tirar do timesheet":"")+'? <button class="btn danger sm" data-act="m-adel-yes">Excluir</button><button class="btn ghost sm" data-act="m-del-no">Cancelar</button></div>':'<button class="btn danger" data-act="m-del">Excluir</button>')+'<div class="r">'+cancel+'<button class="btn" data-act="m-save-atv">Salvar</button></div>';
+  }else if(m.type==="sol"){
+    const x=m.data;title="Editar solicitação";
+    body=pessoasDatalist()+'<div class="fgrid"><label class="f">Para quem<input type="text" id="m-sp" list="dl-pessoas" value="'+esc(x.pessoa||"")+'"></label><div class="f">Projeto'+pickerHTML("m-spj",x.projetoId||INTERNO)+'</div>'+
+      '<label class="f full">O que você pediu<input type="text" id="m-sd" value="'+esc(x.pedido||"")+'"></label>'+
+      '<label class="f">Pedi em<input type="date" id="m-s1" value="'+esc(x.dataPedido||"")+'"></label><label class="f">Quero até<input type="date" id="m-s2" value="'+esc(x.prazo||"")+'"></label>'+
+      '<label class="f">Entregou em<input type="date" id="m-s3" value="'+esc(x.dataEntregue||"")+'"></label><span></span>'+
+      '<label class="f full">Observação<textarea id="m-so" rows="2">'+esc(x.obs||"")+'</textarea></label></div><div id="m-err" class="confirm" hidden></div>';
+    foot=(m.confirmDel?'<div class="confirm">Excluir esta solicitação? <button class="btn danger sm" data-act="m-sdel-yes">Excluir</button><button class="btn ghost sm" data-act="m-del-no">Cancelar</button></div>':'<button class="btn danger" data-act="m-del">Excluir</button>')+'<div class="r">'+cancel+'<button class="btn" data-act="m-save-sol">Salvar</button></div>';
   }else if(m.type==="mail"){
     const p=projById(m.pid);const d=(m.kind==="env"?p.emailEnviado:p.emailRecebido)||{};
     title=m.kind==="env"?"Último e-mail enviado":"Último e-mail recebido";
@@ -954,6 +1039,7 @@ function render(){
   else if(r.view==="timesheet"){crumbs="<b>Timesheet</b>";v.innerHTML=viewTimesheet()}
   else if(r.view==="projetos"){crumbs="<b>Projetos</b>";v.innerHTML=viewProjetos()}
   else if(r.view==="finalizados"){crumbs="<b>Finalizados</b>";v.innerHTML=viewFinalizados()}
+  else if(r.view==="solicitacoes"){crumbs="<b>Solicitações</b>";v.innerHTML=viewSolic()}
   else if(r.view==="prazos"){crumbs="<b>Prazos</b>";v.innerHTML=viewPrazos()}
   else{crumbs="<b>Agenda</b>";v.innerHTML=viewAgenda()}
   $("#crumbs").innerHTML=crumbs;
@@ -1002,6 +1088,11 @@ document.addEventListener("submit",ev=>{
   const f=ev.target;
   if(f.dataset.act==="add-status"){ev.preventDefault();const t=f.elements.texto.value.trim();if(!t)return;const p=clone(projById(f.dataset.id));if(!p)return;
     p.statusNotas=(p.statusNotas||[]).concat([{id:uid(),em:new Date().toISOString(),texto:t}]);f.reset();saveDoc("projetos",p);toast("Status registrado");return}
+  if(f.dataset.act==="add-sol"){ev.preventDefault();const pessoa=f.elements.pessoa.value.trim(),pedido=f.elements.pedido.value.trim();if(!pessoa||!pedido)return;
+    const x={id:uid(),pessoa,pedido,projetoId:pickerValue("sol-proj"),dataPedido:f.elements.dataPedido.value||todayISO(),prazo:f.elements.prazo.value||"",dataEntregue:"",criadoEm:new Date().toISOString()};
+    S.lastProj=x.projetoId;f.reset();saveDoc("solicitacoes",x);toast("Solicitação registrada");return}
+  if(f.dataset.act==="add-doc"){ev.preventDefault();const nome=f.elements.nome.value.trim();if(!nome)return;const p=clone(projById(f.dataset.id));if(!p)return;
+    p.documentos=(p.documentos||[]).concat([{id:uid(),nome,data:f.elements.data.value||todayISO(),obs:f.elements.obs.value.trim()}]);f.reset();saveDoc("projetos",p);toast("Documento registrado");return}
   if(f.dataset.act!=="add-atv")return;ev.preventDefault();
   const titulo=f.elements.titulo.value.trim();if(!titulo)return;
   const projetoId=f.dataset.proj||pickerValue("add-proj");
@@ -1009,7 +1100,9 @@ document.addEventListener("submit",ev=>{
   const ini=f.elements.ini.value,fim=f.elements.fim.value,ja=f.elements.feito.checked;
   const a={id:uid(),titulo,projetoId,data,hIni:ini,hFim:fim,feito:false,criadoEm:new Date().toISOString()};
   f.reset();if(!f.dataset.proj){S.lastProj=projetoId}
-  if(ja){const r=completeNow(a);saveDoc("atividades",r.c).then(()=>doneToast(r.c,r.how));return}
+  if(ja){
+    if(ini&&mins(ini)<=mins(fim||nowHM())){const c=Object.assign({},a,{feito:true,dataFeito:todayISO(),ini,fim:fim||nowHM()});saveDoc("atividades",c).then(()=>doneToast(c,"pelo horário que você informou"));return}
+    const r=completeNow(a);saveDoc("atividades",r.c).then(()=>doneToast(r.c,r.how));return}
   saveDoc("atividades",a).then(()=>toast("Adicionado à agenda"));
 });
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&modal)closeModal()});
@@ -1037,6 +1130,17 @@ document.addEventListener("click",ev=>{
       if(c.etapa){const p=clone(projById(c.projetoId));if(p){p.etapas[c.etapa]={feito:false,data:""};saveDoc("projetos",p)}delDoc("atividades",c.id).then(()=>toast("Etapa desmarcada e retirada do timesheet"));return}
       saveDoc("atividades",c).then(()=>toast("Retirado do timesheet"));break}
     case "start":{const a=atvById(b.dataset.id);if(!a)return;const c=clone(a);if(c.iniciadoEm){delete c.iniciadoEm;saveDoc("atividades",c).then(()=>toast("Contagem cancelada"))}else{c.iniciadoEm=new Date().toISOString();saveDoc("atividades",c).then(()=>toast("Começou às "+nowHM()))}break}
+    case "sol-f":S.solicF=b.dataset.f;render();break;
+    case "sol-entregue":{const x=clone(S.solic.find(y=>y.id===b.dataset.id));if(!x)return;x.dataEntregue=todayISO();saveDoc("solicitacoes",x);toast("Marcada como entregue hoje");break}
+    case "sol-reabrir":{const x=clone(S.solic.find(y=>y.id===b.dataset.id));if(!x)return;x.dataEntregue="";saveDoc("solicitacoes",x);toast("Solicitação reaberta");break}
+    case "sol-edit":{const x=S.solic.find(y=>y.id===b.dataset.id);if(x)openModal({type:"sol",data:clone(x)});break}
+    case "m-save-sol":{const x=modal.data;x.pessoa=val("m-sp");x.pedido=val("m-sd");x.projetoId=pickerValue("m-spj");x.dataPedido=val("m-s1");x.prazo=val("m-s2");x.dataEntregue=val("m-s3");x.obs=val("m-so");
+      if(!x.pessoa||!x.pedido){mErr("Preencha para quem e o que você pediu.");return}closeModal();saveDoc("solicitacoes",x);toast("Solicitação salva");break}
+    case "m-sdel-yes":{const id=modal.data.id;closeModal();delDoc("solicitacoes",id);toast("Solicitação excluída");break}
+    case "doc-del":{const p=clone(projById(b.dataset.id));if(!p)return;
+      if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Confirmar";b.style.color="var(--bad)";setTimeout(()=>{if(b.isConnected){b.dataset.confirm="";b.textContent="Apagar";b.style.color=""}},4000);return}
+      p.documentos=p.documentos.filter(d=>d.id!==b.dataset.d);saveDoc("projetos",p);toast("Documento apagado");break}
+    case "edit-ini":{const a=atvById(b.dataset.id);if(a)openModal({type:"atv",data:clone(a)});setTimeout(()=>{const x=document.getElementById("m-real");if(x)x.focus()},50);break}
     case "edit-atv":{const a=atvById(b.dataset.id);if(a)openModal({type:"atv",data:clone(a)});break}
     case "new-proj":openModal({type:"proj",data:normProj(uid(),{status:"andamento",dataComecei:todayISO()})});break;
     case "edit-proj":openModal({type:"proj",data:clone(projById(b.dataset.id))});break;
@@ -1062,7 +1166,9 @@ document.addEventListener("click",ev=>{
       const a=modal.data;a.titulo=val("m-at");a.projetoId=pickerValue("m-ap");
       if(!a.titulo){mErr("Descreva a atividade.");return}
       if(a.feito){a.dataFeito=val("m-ad");a.ini=val("m-ai");a.fim=val("m-af");const er=validTimes(a.ini,a.fim);if(er){mErr(er);return}if(!a.dataFeito){mErr("Informe o dia em que fez.");return}}
-      else{a.data=val("m-ad");a.hIni=val("m-ai");a.hFim=val("m-af")}
+      else{a.data=val("m-ad");a.hIni=val("m-ai");a.hFim=val("m-af");const r=val("m-real");
+        if(r){if(mins(r)>mins(nowHM())){mErr("A hora de início não pode ser depois de agora.");return}const d=new Date();d.setHours(Number(r.split(":")[0]),Number(r.split(":")[1]),0,0);a.iniciadoEm=d.toISOString()}
+        else if(a.iniciadoEm&&isoDayOf(a.iniciadoEm)===todayISO())delete a.iniciadoEm}
       closeModal();saveDoc("atividades",a).then(()=>toast("Atividade salva"));break}
     case "m-save-proj":{
       syncProjFields();const p=modal.data;
